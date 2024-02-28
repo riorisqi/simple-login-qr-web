@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Login</title>
+</head>
+<body>
+    <header> 
+        <h1 style="color:blue">Login with QR Code</h1> 
+    </header> 
+
+    <button id="get-qr-code">Generate QR</button> 
+    <br>
+    <img class="qrcode-img" src="" alt=""/>
+    <input type="hidden" id="key">
+    <input type="hidden" id="timing" value="timing">
+    <input type="hidden" id="is_login" value="is_login ">
+  
+    <script src= "https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+
+    <script>
+        // create qr code
+        let qrcodefile = ""; // for deleting qr code file after expired and user generate new one
+        $(document).ready(function (param) { 
+            $("#get-qr-code").click(() => {
+                const URL = `http://127.0.0.1:8000/api/qrlogin/create`;
+
+                $.ajax({ 
+                    url: URL,
+                    type: "POST",
+                    dataType: "json",
+                    data: {
+                        key: qrcodefile
+                    },
+                    success: function(result) { 
+                        if(result.status == 1){
+                            let qrcode = result.msg;
+                            qrcodefile = result.key;
+
+                            $('#key').val(result.key);
+                            console.log(result.key);
+
+                            $('#get-qr-code').hide();
+                            $('.qrcode-img').css('filter', 'none');
+                            $('.qrcode-img').attr('src', qrcode);
+
+                            let inter = setInterval(function() {
+                                is_scan_qrcode();
+                            }, 3000);
+                            $('#timing').val(inter);
+
+                            let countdown = 180;
+                            let countdownInterval = setInterval(function() {
+                                countdown--;
+                                if (countdown <= 0) {
+                                    clearInterval(countdownInterval);
+                                    $('.qrcode-img').css('filter', 'blur(5px)');
+                                    $('#get-qr-code').show();
+                                }
+                            }, 1000);
+                        }
+                    } 
+                });
+            });
+        });
+
+        function is_scan_qrcode(){
+            const URL = `http://127.0.0.1:8000/api/qrlogin/web/login`; 
+            var key = $('#key').val();
+
+            $.ajax({
+                type: "POST",
+                dataType: "json",
+                url: URL,
+                data:{
+                    key: key
+                },
+                success: function(result){
+                    if(result.status == 1){
+                        clearInterval($('#timing').val());
+                        $( '#timing').val('');
+
+                        let is_login = setInterval(function() {
+                            is_login_check();
+                        }, 3000);
+                        $('#is_login').val(is_login);
+
+                    } else if(result.status == 2){
+                        $('.timeout, .mask').show();
+
+                        clearInterval($('#timing').val());
+                        $('#timing').val('');
+                    }
+                }
+            });
+        };
+
+        function is_login_check(){
+            const URL = `http://127.0.0.1:8000/api/qrlogin/web/login/entry`;
+            var key = $('#key').val();
+
+            $.ajax({
+                type: "POST",
+                dataType: "json",
+                url: URL,
+                data: {
+                    key: key
+                },
+                success:function(result) {
+                    if (result.status == 1){
+                        var token = result.access_token;
+                        var user = result.user;
+                        console.log("response", result);
+
+                        clearInterval($('#is_login').val());
+                        $('#is_login').val('');
+
+                        $('.qrcode-img').attr('src', '');
+                        alert("Login Success!");
+
+                        window.location.href = "dashboard.html";
+                    } else  if (result.status == 2){ 
+                        clearInterval($('#is_login').val());
+                        $('#is_login').val('');
+                        
+                        alert("login failed");
+                    }
+                }
+            });
+        };
+    </script> 
+</body>
+</html>
