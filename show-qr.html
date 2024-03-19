@@ -45,18 +45,20 @@
     <div id="loadingOverlay">
         <div class="spinner"></div>
     </div>
-    <input type="hidden" id="key">
-    <input type="hidden" id="timing" value="timing">
-    <input type="hidden" id="is_login" value="is_login ">
   
     <script src= "https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
 
     <script>
         // create qr code
-        let qrcodefile = ""; // for deleting qr code file after expired and user generate new one
+        let qrcodefile = ''; // for deleting qr code file after expired and user generate new one
+
+        let qrKeyValue = ''; // save kwy value from qr code and for deleting qr code file after expired and user generate new one
+        let timing = 0; // for ajax timing
+        let is_login = 0; // ajax timing 
+
         $(document).ready(function (param) { 
             $("#get-qr-code").click(() => {
-                var loadingOverlay = document.getElementById("loadingOverlay");
+                let loadingOverlay = document.getElementById("loadingOverlay");
                 loadingOverlay.style.display = "flex";
 
                 const URL = `http://127.0.0.1:8000/api/qrlogin/create`;
@@ -66,26 +68,22 @@
                     type: "POST",
                     dataType: "json",
                     data: {
-                        key: qrcodefile
+                        key: qrKeyValue
                     },
                     success: function(result) { 
                         if(result.status == 1){
                             loadingOverlay.style.display = "none";
                             
                             let qrcode = result.msg;
-                            qrcodefile = result.key;
-
-                            $('#key').val(result.key);
-                            console.log(result.key);
+                            qrKeyValue = result.key;
 
                             $('#get-qr-code').hide();
                             $('.qrcode-img').css('filter', 'none');
                             $('.qrcode-img').attr('src', qrcode);
 
-                            let inter = setInterval(function() {
+                            timing = setInterval(function() {
                                 is_scan_qrcode();
                             }, 1000);
-                            $('#timing').val(inter);
 
                             let countdown = 180;
                             let countdownInterval = setInterval(function() {
@@ -105,31 +103,26 @@
         });
 
         function is_scan_qrcode(){
-            const URL = `http://127.0.0.1:8000/api/qrlogin/web/login`; 
-            var key = $('#key').val();
+            const URL = `http://127.0.0.1:8000/api/qrlogin/web/login`;
 
             $.ajax({
                 type: "POST",
                 dataType: "json",
                 url: URL,
                 data:{
-                    key: key
+                    key: qrKeyValue
                 },
                 success: function(result){
                     if(result.status == 1){
-                        clearInterval($('#timing').val());
-                        $( '#timing').val('');
+                        clearInterval(timing);
+                        timing = 0;
 
-                        let is_login = setInterval(function() {
+                        is_login = setInterval(function() {
                             is_login_check();
                         }, 1000);
-                        $('#is_login').val(is_login);
-
                     } else if(result.status == 2){
-                        $('.timeout, .mask').show();
-
-                        clearInterval($('#timing').val());
-                        $('#timing').val('');
+                        clearInterval(timing);
+                        timing = 0;
                     }
                 }
             });
@@ -137,14 +130,13 @@
 
         function is_login_check(){
             const URL = `http://127.0.0.1:8000/api/qrlogin/web/login/entry`;
-            var key = $('#key').val();
 
             $.ajax({
                 type: "POST",
                 dataType: "json",
                 url: URL,
                 data: {
-                    key: key
+                    key: qrKeyValue
                 },
                 success:function(result) {
                     if (result.status == 1){
@@ -155,8 +147,8 @@
                         var user = result.user;
                         console.log("response", result);
 
-                        clearInterval($('#is_login').val());
-                        $('#is_login').val('');
+                        clearInterval(is_login);
+                        is_login = 0;
 
                         $('.qrcode-img').attr('src', '');
                         alert("Login Success!");
@@ -166,8 +158,8 @@
                         var loadingOverlay = document.getElementById("loadingOverlay");
                         loadingOverlay.style.display = "none";
 
-                        clearInterval($('#is_login').val());
-                        $('#is_login').val('');
+                        clearInterval(is_login);
+                        is_login = 0;
                         
                         alert("login failed");
                     }
