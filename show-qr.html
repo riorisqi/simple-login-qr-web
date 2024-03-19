@@ -49,13 +49,11 @@
     <script src= "https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
 
     <script>
-        // create qr code
-        let qrcodefile = ''; // for deleting qr code file after expired and user generate new one
-
         let qrKeyValue = ''; // save kwy value from qr code and for deleting qr code file after expired and user generate new one
         let timing = 0; // for ajax timing
         let is_login = 0; // ajax timing 
-
+        
+        // create qr code
         $(document).ready(function (param) { 
             $("#get-qr-code").click(() => {
                 let loadingOverlay = document.getElementById("loadingOverlay");
